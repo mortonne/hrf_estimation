@@ -284,28 +284,46 @@ def rank_one(X, y, n_basis,  w_i=None, drifts=None, callback=None,
 def normalize(basis, hrf_length, TR, U, V):
     """Normalize parameter estimates.
 
+    Given estimates of parameters for a basis set, resolve the
+    ambiguity in whether a given value is due to basis set parameters
+    or betas of those parameters in fitting the timeseries.
+
+    Parameters
+    ----------
+    basis : str
+        one of {'fir', '3hrf', '2hrf'}
+    hrf_length : float
+        length of HRF to estimate in s
+    TR : float
+        repetition time in s
+    U : [basis x conditions x voxels] array
+        basis function parameter estimates
+    V : [conditions x voxels] array
+        condition activation estimates
+    
+    Returns
+    -------
+    U : normalized basis function parameter estimates
+    V : normalized condition activation estimates
+
+    """
+    
+    xx =  np.arange(0, hrf_length, TR)
     if basis == '3hrf':
-        xx = np.linspace(0, hrf_length * TR)
         generated_hrfs = U[0] * hrf.spmt(xx)[:, None] + \
             U[1] * hrf.dspmt(xx)[:, None] + U[2] * hrf.ddspmt(xx)[:, None]
         sign = np.sign(np.dot(generated_hrfs.T, hrf.spmt(xx)))
         norm = np.abs(generated_hrfs).max(0)
-        U = U * sign / norm
-        V = V * sign * norm
     elif basis == '2hrf':
-        xx = np.linspace(0, hrf_length * TR)
         generated_hrfs = U[0] * hrf.spmt(xx)[:, None] + \
             U[1] * hrf.dspmt(xx)[:, None]
         sign = np.sign(np.dot(generated_hrfs.T, hrf.spmt(xx)))
         norm = np.abs(generated_hrfs).max(0)
-        U = U * sign / norm
-        V = V * sign * norm
     elif basis == 'fir':
-        xx =  np.arange(0, hrf_length, TR)
         sign = np.sign(np.dot(U.T, hrf.spmt(xx)))
         norm = np.abs(U).max(0)
-        U = U * sign / norm
-        V = V * sign * norm
+    U = U * sign / norm
+    V = V * sign * norm
     return U, V
 
 
