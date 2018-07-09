@@ -491,8 +491,9 @@ def glm(conditions, onsets, TR, Y, drifts=None, basis='3hrf', mode='r1glm',
 
         raw_U = U.copy()
     # normalize
-    if mode in ('r1glm',):
+    if mode in ('r1glm','r1glms'):
         U, V = normalize(basis, hrf_length, TR, U, V)
+        
     out = [U, V]
     if return_design_matrix:
         if hasattr(X_design, 'toarray'):
