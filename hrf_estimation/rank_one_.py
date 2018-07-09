@@ -282,6 +282,7 @@ def rank_one(X, y, n_basis,  w_i=None, drifts=None, callback=None,
 
 
 def normalize(basis, hrf_length, TR, U, V):
+    """Normalize parameter estimates.
 
     if basis == '3hrf':
         xx = np.linspace(0, hrf_length * TR)
