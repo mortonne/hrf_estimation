@@ -169,7 +169,7 @@ def _separate_innerloop(glms_design, n_basis, voxels):
     return betas, w
 
 
-def glms_from_glm(glm_design, Q, n_jobs, return_w, voxels):
+def glms_from_glm(glm_design, Q, n_jobs, return_w, voxels, hrf_function=None):
     """
     Performs a GLM-separate from a GLM design matrix as input
 
@@ -177,6 +177,8 @@ def glms_from_glm(glm_design, Q, n_jobs, return_w, voxels):
 
     **Note** output is unnormalized
     """
+    if hrf_function is None:
+        hrf_function = Q[:, 0]
     n_basis = Q.shape[1]
     glms_design = classic_to_obo(glm_design, n_basis)
     if n_jobs == -1:
@@ -191,12 +193,14 @@ def glms_from_glm(glm_design, Q, n_jobs, return_w, voxels):
         betas.append(o[0])
         w.append(o[1])
     full_betas = np.concatenate(betas, axis=1)
-    full_w = np.concatenate(w, axis=1)
-    hrfs = full_betas.T
-    norm = np.sqrt((hrfs * hrfs).sum(-1))
+    hrfs = full_betas.T.dot(Q.T)
+    sign = np.sign((hrfs * hrf_function).sum(-1))
+    hrfs = hrfs * sign[..., None]
+    norm = hrfs.max(-1)
     hrfs /= norm[..., None]
-    betas = norm
+    betas = norm * sign
     if return_w:
+        full_w = np.concatenate(w, axis=1)
         hrfs_w = full_w.T.dot(Q.T)
         norm_w = np.sqrt((hrfs_w * hrfs_w).sum(-1))
         hrfs_w = hrfs_w  / norm_w[..., None]
