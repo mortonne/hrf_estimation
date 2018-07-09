@@ -440,11 +440,13 @@ def glm(conditions, onsets, TR, Y, drifts=None, basis='3hrf', mode='r1glm',
     size_v = X_design.shape[1] // size_u
 
     if mode == 'glms':
+        xx =  np.arange(0, hrf_length, TR)
         U, V = utils.glms_from_glm(
-            X_design, Q, n_jobs, False, Y)
+            X_design, Q, n_jobs, False, Y, hrf_function=hrf.spmt(xx))
     elif mode == 'glm':
+        xx =  np.arange(0, hrf_length, TR)
         U, V = utils.glm(
-            X_design, Q, Y, convolve=False)
+            X_design, Q, Y, hrf_function=hrf.spmt(xx), convolve=False)
     elif mode in ('r1glm', 'r1glms'):
         U = np.zeros((size_u, n_task))
         V = np.zeros((size_v, n_task))
