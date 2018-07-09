@@ -281,6 +281,33 @@ def rank_one(X, y, n_basis,  w_i=None, drifts=None, callback=None,
     return U, V
 
 
+def normalize(basis, hrf_length, TR, U, V):
+
+    if basis == '3hrf':
+        xx = np.linspace(0, hrf_length * TR)
+        generated_hrfs = U[0] * hrf.spmt(xx)[:, None] + \
+            U[1] * hrf.dspmt(xx)[:, None] + U[2] * hrf.ddspmt(xx)[:, None]
+        sign = np.sign(np.dot(generated_hrfs.T, hrf.spmt(xx)))
+        norm = np.abs(generated_hrfs).max(0)
+        U = U * sign / norm
+        V = V * sign * norm
+    elif basis == '2hrf':
+        xx = np.linspace(0, hrf_length * TR)
+        generated_hrfs = U[0] * hrf.spmt(xx)[:, None] + \
+            U[1] * hrf.dspmt(xx)[:, None]
+        sign = np.sign(np.dot(generated_hrfs.T, hrf.spmt(xx)))
+        norm = np.abs(generated_hrfs).max(0)
+        U = U * sign / norm
+        V = V * sign * norm
+    elif basis == 'fir':
+        xx =  np.arange(0, hrf_length, TR)
+        sign = np.sign(np.dot(U.T, hrf.spmt(xx)))
+        norm = np.abs(U).max(0)
+        U = U * sign / norm
+        V = V * sign * norm
+    return U, V
+
+
 def glm(conditions, onsets, TR, Y, drifts=None, basis='3hrf', mode='r1glm',
         hrf_length=20, oversample=5,
         rtol=1e-8, verbose=False, maxiter=500, callback=None,
@@ -442,29 +469,9 @@ def glm(conditions, onsets, TR, Y, drifts=None, basis='3hrf', mode='r1glm',
                 counter += 1
 
         raw_U = U.copy()
-        # normalize
-    if mode in ('r1glm',) and basis == '3hrf':
-        xx = np.linspace(0, hrf_length * TR)
-        generated_hrfs = U[0] * hrf.spmt(xx)[:, None] + \
-            U[1] * hrf.dspmt(xx)[:, None] + U[2] * hrf.ddspmt(xx)[:, None]
-        sign = np.sign(np.dot(generated_hrfs.T, hrf.spmt(xx)))
-        norm = np.abs(generated_hrfs).max(0)
-        U = U * sign / norm
-        V = V * sign * norm
-    elif mode in ('r1glm',) and basis == '2hrf':
-        xx = np.linspace(0, hrf_length * TR)
-        generated_hrfs = U[0] * hrf.spmt(xx)[:, None] + \
-            U[1] * hrf.dspmt(xx)[:, None]
-        sign = np.sign(np.dot(generated_hrfs.T, hrf.spmt(xx)))
-        norm = np.abs(generated_hrfs).max(0)
-        U = U * sign / norm
-        V = V * sign * norm
-    elif mode == 'r1glm' and basis == 'fir':
-        xx =  np.arange(0, TR * hrf_length, TR)
-        sign = np.sign(np.dot(U.T, hrf.spmt(xx)))
-        norm = np.abs(U).max(0)
-        U = U * sign / norm
-        V = V * sign * norm
+    # normalize
+    if mode in ('r1glm',):
+        U, V = normalize(basis, hrf_length, TR, U, V)
     out = [U, V]
     if return_design_matrix:
         if hasattr(X_design, 'toarray'):
