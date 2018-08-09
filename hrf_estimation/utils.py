@@ -130,11 +130,43 @@ def classic_to_obo(classic_design, fir_length=1):
 
 def glm(event_matrix, Q, voxels, hrf_function=None, downsample=1,
         convolve=True):
+    """Perform a GLM from an event matrix.
+    
+    Parameters
+    ----------
+    
+    event_matrix : array-like, shape (n_samples, n_trials)
+        Design matrix with all trials to estimate.
+
+    Q : array-like, shape (hrf_length, n_basis)
+        Matrix with all basis functions. If convolve is True, the
+        events matrix will be convolved with this to make the design
+        matrix. Also used for normalization.
+
+    voxels : array-like, shape (n_samples, n_voxels)
+        Matrix with data to model.
+
+    hrf_function : array-like, shape (hrf_length)
+        Canonical hrf function to use for normalization.
+
+    downsample : int
+        Amount to downsample the convolved design.
+
+    convolve : bool
+        If true, event_matrix will be convolved with Q.
+
+    Returns
+    -------
+    hrfs : array, shape (hrf_length, n_trials, n_voxels)
+        Estimated HRF for each trial/condition and voxel. HRFs are
+        constrained to be positively correlated with the canonical
+        HRF, and to have a maximum of 1.
+
+    betas : array (n_trials, n_voxels)
+        Betaseries estimate for each trial/condition.
+
     """
-    Perform a GLM from an event matrix
-    and return estimated HRFs and associated coefficients
-    Q: basis
-    """
+    
     Q = np.asarray(Q)
     if Q.ndim == 1:
         Q = Q[:, None]
