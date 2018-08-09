@@ -319,9 +319,14 @@ def normalize(basis, hrf_length, TR, U, V):
             U[1] * hrf.dspmt(xx)[:, None]
         sign = np.sign(np.dot(generated_hrfs.T, hrf.spmt(xx)))
         norm = np.abs(generated_hrfs).max(0)
+    elif basis == 'hrf':
+        generated_hrfs = U[0] * hrf.spmt(xx)[:, None]
+        sign = np.sign(np.dot(generated_hrfs.T, hrf.spmt(xx)))
+        norm = np.abs(generated_hrfs).max(0)
     elif basis == 'fir':
         sign = np.sign(np.dot(U.T, hrf.spmt(xx)))
         norm = np.abs(U).max(0)
+
     U = U * sign / norm
     V = V * sign * norm
     return U, V
