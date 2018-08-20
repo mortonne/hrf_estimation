@@ -1,3 +1,4 @@
+import six
 import functools
 import numpy as np
 from numbers import Number
@@ -25,25 +26,30 @@ def create_design_matrix(conditions, onsets, TR, n_scans, basis='3hrf',
     design_matrix
     basis
     """
-    if basis == '3hrf':
-        basis = [hrf.spmt, hrf.dspmt, hrf.ddspmt]
-    elif basis == '2hrf':
-        basis = [hrf.spmt, hrf.dspmt]
-    elif basis == 'hrf':
-        basis = [hrf.spmt]
-    elif basis == 'fir':
-        basis = []
-        for i in range(int(hrf_length / TR)):
-            tmp = functools.partial(hrf.fir, i=i, TR=TR)
-            # import pylab as pl
-            # xx = np.linspace(0, 20)
-            # pl.plot(xx, tmp(xx)); pl.show()
-            basis.append(tmp)
+
+    from scipy.interpolate import interp1d, CubicSpline
+    
+    if isinstance(basis, six.string_types):
+        if basis == '3hrf':
+            basis = [hrf.spmt, hrf.dspmt, hrf.ddspmt]
+        elif basis == '2hrf':
+            basis = [hrf.spmt, hrf.dspmt]
+        elif basis == 'hrf':
+            basis = [hrf.spmt]
+        elif basis == 'fir':
+            basis = []
+            for i in range(int(hrf_length / TR)):
+                tmp = functools.partial(hrf.fir, i=i, TR=TR)
+                # import pylab as pl
+                # xx = np.linspace(0, 20)
+                # pl.plot(xx, tmp(xx)); pl.show()
+                basis.append(tmp)
+    else:
+        hrf_times = np.linspace(0, (len(basis)-1)*TR, len(basis))
+        basis = [CubicSpline(hrf_times, basis)]
 
     frametimes = np.arange(0, TR * n_scans, TR)
     hr_frametimes = np.arange(0, TR * n_scans, TR / oversample)
-
-    from scipy.interpolate import interp1d
 
     resolution = TR / float(oversample)
     conditions = np.asarray(conditions)
@@ -55,6 +61,7 @@ def create_design_matrix(conditions, onsets, TR, n_scans, basis='3hrf',
         # needs to be a multiple of oversample
         tmp_basis = b(np.linspace(0, hrf_length, (hrf_length // TR) * oversample))
         B.append(tmp_basis)
+
     for c in unique_conditions:
         tmp = np.zeros(int(n_scans * TR/resolution))
         onset_c = onsets[conditions == c]
