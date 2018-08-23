@@ -291,20 +291,23 @@ def normalize(basis, hrf_length, TR, U, V):
     Parameters
     ----------
     basis : str
-        one of {'fir', '3hrf', '2hrf'}
+        HRF basis to use. One of {'fir', '3hrf', '2hrf'}, or an array
+        with an estimate of the HRF at each time point.
     hrf_length : float
-        length of HRF to estimate in s
+        Length of HRF to estimate in s.
     TR : float
-        repetition time in s
+        Repetition time in s.
     U : [basis x conditions x voxels] array
-        basis function parameter estimates
+        Basis function parameter estimates.
     V : [conditions x voxels] array
-        condition activation estimates
+        Condition activation estimates.
     
     Returns
     -------
-    U : normalized basis function parameter estimates
-    V : normalized condition activation estimates
+    U : [basis x conditions x voxels] array
+        Normalized basis function parameter estimates
+    V : [conditions x voxels] array
+        Normalized condition activation estimates
 
     """
     
@@ -326,7 +329,7 @@ def normalize(basis, hrf_length, TR, U, V):
     elif basis == 'fir':
         sign = np.sign(np.dot(U.T, hrf.spmt(xx)))
         norm = np.abs(U).max(0)
-
+    
     U = U * sign / norm
     V = V * sign * norm
     return U, V
