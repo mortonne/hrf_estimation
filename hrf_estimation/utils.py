@@ -14,17 +14,27 @@ def create_design_matrix(conditions, onsets, TR, n_scans, basis='3hrf',
     """
     Parameters
     ----------
-    conditions: list of conditions
-    onset: list of onsets
-    TR: float
-        repetition time
-    n_scans: number of scans
-    basis: one of {'fir', '3hrf', '2hrf', 'hrf'}
+    conditions : array-like
+        Numeric condition code for each trial.
+    onset : array-like
+        Onset time in s for each trial.
+    TR : float
+        Repetition time in s.
+    n_scans : int
+        Total number of scan times to be modeled.
+    basis : str or list of functions
+        One of ['fir', '3hrf', '2hrf', 'hrf'], or a list of callable
+        functions corresponding to each basis function. Each callable
+        must take in arbitrary times in s and give the value of the
+        HRF at that time.
     
     Returns
     -------
-    design_matrix
-    basis
+    design_matrix : ndarray, shape (n_scans, n_conds)
+        Model of the BOLD response for each condition.
+    Q : ndarray, shape (n_samples, n_basis)
+        Values of each of the basis functions.
+
     """
 
     from scipy.interpolate import interp1d, CubicSpline
@@ -44,7 +54,7 @@ def create_design_matrix(conditions, onsets, TR, n_scans, basis='3hrf',
                 # xx = np.linspace(0, 20)
                 # pl.plot(xx, tmp(xx)); pl.show()
                 basis.append(tmp)
-    else:
+    elif type(basis) is np.ndarray:
         hrf_times = np.linspace(0, (len(basis)-1)*TR, len(basis))
         basis = [CubicSpline(hrf_times, basis)]
 
