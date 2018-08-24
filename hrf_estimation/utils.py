@@ -28,6 +28,14 @@ def create_design_matrix(conditions, onsets, TR, n_scans, basis='3hrf',
         must take in arbitrary times in s and give the value of the
         HRF at that time.
     
+        May also pass in a list of ndarrays with the estimated HRF at
+        different times that are multiples of the TR, starting at zero.
+    oversample : int, default: 10
+        Multiple of the original time resolution to sample the basis
+        functions before convolution.
+    hrf_length : float, default: 32
+        Maximum time in s to evaluate the basis functions.
+    
     Returns
     -------
     design_matrix : ndarray, shape (n_scans, n_conds)
@@ -38,7 +46,6 @@ def create_design_matrix(conditions, onsets, TR, n_scans, basis='3hrf',
     """
 
     from scipy.interpolate import interp1d, CubicSpline
-    
     if isinstance(basis, six.string_types):
         if basis == '3hrf':
             basis = [hrf.spmt, hrf.dspmt, hrf.ddspmt]
@@ -54,9 +61,16 @@ def create_design_matrix(conditions, onsets, TR, n_scans, basis='3hrf',
                 # xx = np.linspace(0, 20)
                 # pl.plot(xx, tmp(xx)); pl.show()
                 basis.append(tmp)
-    elif type(basis) is np.ndarray:
-        hrf_times = np.linspace(0, (len(basis)-1)*TR, len(basis))
-        basis = [CubicSpline(hrf_times, basis)]
+    elif type(basis[0]) is np.ndarray:
+        newbasis = []
+        for b in basis:
+            hrf_times = np.linspace(0, (len(b)-1)*TR, len(b))
+            newbasis.append(CubicSpline(hrf_times, b))
+
+            # make sure we don't have to extrapolate
+            if hrf_times[-1] < hrf_length:
+                raise ValueError('Not enough HRF samples provided for an HRF length of {}'.format(hrf_length))
+        basis = newbasis
 
     frametimes = np.arange(0, TR * n_scans, TR)
     hr_frametimes = np.arange(0, TR * n_scans, TR / oversample)
